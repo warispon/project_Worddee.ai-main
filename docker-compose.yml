@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  backend:
+    build: ./api
+    container_name: worddee_backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./api:/app
+      - ./api/worddee.db:/app/worddee.db
+    environment:
+      - PYTHONUNBUFFERED=1
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+
+  frontend:
+    build: ./frontend
+    container_name: worddee_frontend
+    ports:
+      - "3001:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://backend:8000
+    depends_on:
+      - backend
+
+  n8n:
+    image: docker.n8n.io/n8nio/n8n
+    container_name: worddee_n8n
+    ports:
+      - "5678:5678"
+    volumes:
+      - n8n_data:/home/node/.n8n
+
+volumes:
+  n8n_data:
