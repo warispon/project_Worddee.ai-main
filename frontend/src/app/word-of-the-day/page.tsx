@@ -158,7 +158,7 @@ export default function WordOfTheDayPage() {
 
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", marginBottom: 18 }}>
             <span style={{ background: "#0ea5e9", color: "white", padding: "6px 10px", borderRadius: 999, fontSize: "0.9rem", fontWeight: 700 }}>
-              ⏱️ {Math.floor(elapsedSec / 60)}:{String(elapsedSec % 60).padStart(2, "0")}
+               {Math.floor(elapsedSec / 60)}:{String(elapsedSec % 60).padStart(2, "0")}
             </span>
             <span style={{ background: "#f1f5f9", color: "#0f172a", padding: "6px 10px", borderRadius: 999, fontSize: "0.85rem" }}>
               Started: {startedAtISO ? new Date(startedAtISO).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" }) : "-"}
