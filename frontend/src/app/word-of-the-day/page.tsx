@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -22,35 +21,21 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 const toISOWithOffset = (d: Date) => {
   const pad = (n: number) => String(n).padStart(2, "0");
-  const tz = -d.getTimezoneOffset(); // minutes ahead of UTC
+  const tz = -d.getTimezoneOffset();
   const sign = tz >= 0 ? "+" : "-";
   const hh = pad(Math.floor(Math.abs(tz) / 60));
   const mm = pad(Math.abs(tz) % 60);
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}${sign}${hh}:${mm}`;
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(
+    d.getHours()
+  )}:${pad(d.getMinutes())}:${pad(d.getSeconds())}${sign}${hh}:${mm}`;
 };
-
-const localDateYYYYMMDD = () => {
-  const d = new Date();
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-};
-
 
 export default function WordOfTheDayPage() {
   const router = useRouter();
 
-  // --- real timer (seconds since page ready) ---
   const startMsRef = useRef<number | null>(null);
   const [elapsedSec, setElapsedSec] = useState(0);
   const [startedAtISO, setStartedAtISO] = useState<string | null>(null);
-
-
-  const startNewAttempt = () => {
-    startMsRef.current = performance.now();
-    setStartedAtISO(new Date().toISOString());
-    setElapsedSec(0);
-  };
-
 
   const [word, setWord] = useState<Word | null>(null);
   const [sentence, setSentence] = useState("");
@@ -61,8 +46,13 @@ export default function WordOfTheDayPage() {
   const [result, setResult] = useState<ValidateResult | null>(null);
   const [showResultModal, setShowResultModal] = useState(false);
 
+  const startNewAttempt = () => {
+    startMsRef.current = performance.now();
+    setStartedAtISO(new Date().toISOString());
+    setElapsedSec(0);
+  };
+
   useEffect(() => {
-    // start timer immediately (will reset again when a new word loads)
     startNewAttempt();
 
     const fetchWord = async () => {
@@ -73,9 +63,8 @@ export default function WordOfTheDayPage() {
         if (!res.ok) throw new Error("Cannot load word of the day");
         const data = (await res.json()) as Word;
         setWord(data);
-      
         startNewAttempt();
-} catch (err) {
+      } catch (err) {
         console.error(err);
         setError("ไม่สามารถโหลด Word of the Day ได้");
       } finally {
@@ -86,13 +75,13 @@ export default function WordOfTheDayPage() {
     fetchWord();
   }, []);
 
-  const handleRetry = () => {
-    setSentence("");
-    setResult(null);
-    setShowModal(false);
-    setError(null);
-    startNewAttempt();
-  };
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      if (startMsRef.current === null) return;
+      setElapsedSec(Math.floor((performance.now() - startMsRef.current) / 1000));
+    }, 250);
+    return () => window.clearInterval(id);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -108,14 +97,15 @@ export default function WordOfTheDayPage() {
         body: JSON.stringify({
           word_id: word.id,
           sentence: sentence.trim(),
-          duration_seconds: startMsRef.current ? Math.max(0, Math.floor((performance.now() - startMsRef.current) / 1000)) : 0,
+          duration_seconds:
+            startMsRef.current !== null
+              ? Math.max(0, Math.floor((performance.now() - startMsRef.current) / 1000))
+              : 0,
           client_time_iso: toISOWithOffset(new Date()),
         }),
       });
 
-      if (!res.ok) {
-        throw new Error("Validation failed");
-      }
+      if (!res.ok) throw new Error("Validation failed");
 
       const data = (await res.json()) as ValidateResult;
       setResult(data);
@@ -128,25 +118,18 @@ export default function WordOfTheDayPage() {
     }
   };
 
+  const handleRetry = () => {
+    setSentence("");
+    setResult(null);
+    setShowResultModal(false);
+    setError(null);
+    startNewAttempt();
+  };
+
   const isSkeleton = loadingWord || submitting;
 
-
-  useEffect(() => {
-    const id = window.setInterval(() => {
-      if (startMsRef.current === null) return;
-      setElapsedSec(Math.floor((performance.now() - startMsRef.current) / 1000));
-    }, 250);
-    return () => window.clearInterval(id);
-  }, []);
-
   return (
-    <main
-      style={{
-        minHeight: "calc(100vh - 56px)",
-        padding: "40px 0",
-      
-      }}
-    >
+    <main style={{ minHeight: "calc(100vh - 56px)", padding: "40px 0" }}>
       <div
         style={{
           maxWidth: 1160,
@@ -166,24 +149,10 @@ export default function WordOfTheDayPage() {
             boxShadow: "0 18px 40px rgba(15,23,42,0.20)",
           }}
         >
-          <h1
-            style={{
-              margin: 0,
-              marginBottom: 4,
-              fontSize: "1.8rem",
-              color: "#0f172a",
-            }}
-          >
+          <h1 style={{ margin: 0, marginBottom: 4, fontSize: "1.8rem", color: "#0f172a" }}>
             Word of the day
           </h1>
-          <p
-            style={{
-              margin: 0,
-              marginBottom: 24,
-              fontSize: "0.9rem",
-              color: "#6b7280",
-            }}
-          >
+          <p style={{ margin: 0, marginBottom: 24, fontSize: "0.9rem", color: "#6b7280" }}>
             Practice writing a meaningful sentence using today&apos;s word.
           </p>
 
@@ -215,6 +184,7 @@ export default function WordOfTheDayPage() {
                   "url('https://images.unsplash.com/photo-1519677100203-a0e668c92439?auto=format&fit=crop&w=600&q=80')",
                 backgroundSize: "cover",
                 backgroundPosition: "center",
+                opacity: isSkeleton ? 0.7 : 1,
               }}
             />
 
@@ -231,91 +201,26 @@ export default function WordOfTheDayPage() {
             >
               {isSkeleton && (
                 <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                  <div
-                    style={{
-                      width: 120,
-                      height: 20,
-                      borderRadius: 999,
-                      background: "#f3f4f6",
-                    }}
-                  />
-                  <div
-                    style={{
-                      width: 220,
-                      height: 32,
-                      borderRadius: 999,
-                      background: "#f3f4f6",
-                    }}
-                  />
-                  <div
-                    style={{
-                      width: "100%",
-                      height: 10,
-                      borderRadius: 999,
-                      background: "#f3f4f6",
-                    }}
-                  />
-                  <div
-                    style={{
-                      width: "80%",
-                      height: 10,
-                      borderRadius: 999,
-                      background: "#f3f4f6",
-                    }}
-                  />
-                  <div
-                    style={{
-                      width: "60%",
-                      height: 10,
-                      borderRadius: 999,
-                      background: "#f3f4f6",
-                    }}
-                  />
+                  <div style={{ width: 120, height: 20, borderRadius: 999, background: "#f3f4f6" }} />
+                  <div style={{ width: 220, height: 32, borderRadius: 999, background: "#f3f4f6" }} />
+                  <div style={{ width: "100%", height: 10, borderRadius: 999, background: "#f3f4f6" }} />
+                  <div style={{ width: "80%", height: 10, borderRadius: 999, background: "#f3f4f6" }} />
+                  <div style={{ width: "60%", height: 10, borderRadius: 999, background: "#f3f4f6" }} />
                 </div>
               )}
 
               {!isSkeleton && word && (
                 <>
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      marginBottom: 4,
-                    }}
-                  >
-                    <span
-                      style={{
-                        fontSize: "0.75rem",
-                        letterSpacing: "0.08em",
-                        textTransform: "uppercase",
-                        color: "#6b7280",
-                      }}
-                    >
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                    <span style={{ fontSize: "0.75rem", letterSpacing: "0.08em", textTransform: "uppercase", color: "#6b7280" }}>
                       Noun
                     </span>
-                    <span
-                      style={{
-                        padding: "4px 12px",
-                        borderRadius: 999,
-                        background: "#fef3c7",
-                        fontSize: "0.75rem",
-                        color: "#92400e",
-                      }}
-                    >
+                    <span style={{ padding: "4px 12px", borderRadius: 999, background: "#fef3c7", fontSize: "0.75rem", color: "#92400e" }}>
                       Level {word.difficulty_level}
                     </span>
                   </div>
 
-                  <h2
-                    style={{
-                      margin: 0,
-                      fontSize: "1.4rem",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 8,
-                    }}
-                  >
+                  <h2 style={{ margin: 0, fontSize: "1.4rem", display: "flex", alignItems: "center", gap: 8 }}>
                     <span
                       style={{
                         display: "inline-flex",
@@ -333,25 +238,16 @@ export default function WordOfTheDayPage() {
                     {word.word}
                   </h2>
 
-                  <p
-                    style={{
-                      margin: 0,
-                      fontSize: "0.8rem",
-                      color: "#6b7280",
-                    }}
-                  >
-                    Meaning:{" "}
-                    <span style={{ color: "#374151" }}>{word.definition}</span>
+                  <p style={{ margin: 0, fontSize: "0.8rem", color: "#6b7280" }}>
+                    Meaning: <span style={{ color: "#374151" }}>{word.definition}</span>
                   </p>
                 </>
               )}
 
-              {!isSkeleton && !word && !error && (
-                <p style={{ fontSize: "0.9rem" }}>No word available today.</p>
-              )}
+              {!isSkeleton && !word && !error && <p style={{ fontSize: "0.9rem" }}>No word available today.</p>}
 
               {error && (
-                <p style={{ fontSize: "0.8rem", color: "#b91c1c", marginTop: 4 }}>
+                <p style={{ fontSize: "0.8rem", color: "#b91c1c", marginTop: 4, marginBottom: 0 }}>
                   {error}
                 </p>
               )}
@@ -376,14 +272,7 @@ export default function WordOfTheDayPage() {
               }}
             />
 
-            <div
-              style={{
-                marginTop: 20,
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-              }}
-            >
+            <div style={{ marginTop: 20, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <button
                 type="button"
                 disabled={isSkeleton}
@@ -410,8 +299,7 @@ export default function WordOfTheDayPage() {
                   background: "#064e3b",
                   color: "white",
                   fontSize: "0.95rem",
-                  cursor:
-                    isSkeleton || !sentence.trim() ? "not-allowed" : "pointer",
+                  cursor: isSkeleton || !sentence.trim() ? "not-allowed" : "pointer",
                   opacity: isSkeleton || !sentence.trim() ? 0.7 : 1,
                 }}
               >
@@ -445,43 +333,15 @@ export default function WordOfTheDayPage() {
               boxShadow: "0 24px 60px rgba(15,23,42,0.55)",
             }}
           >
-            <h2
-              style={{
-                margin: 0,
-                marginBottom: 10,
-                fontSize: "1.6rem",
-                textAlign: "center",
-              }}
-            >
+            <h2 style={{ margin: 0, marginBottom: 10, fontSize: "1.6rem", textAlign: "center" }}>
               Challenge completed
             </h2>
 
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "center",
-                gap: 10,
-                marginBottom: 22,
-              }}
-            >
-              <span
-                style={{
-                  padding: "4px 14px",
-                  borderRadius: 999,
-                  background: "#fef3c7",
-                  fontSize: "0.8rem",
-                }}
-              >
+            <div style={{ display: "flex", justifyContent: "center", gap: 10, marginBottom: 22 }}>
+              <span style={{ padding: "4px 14px", borderRadius: 999, background: "#fef3c7", fontSize: "0.8rem" }}>
                 Level {result.level}
               </span>
-              <span
-                style={{
-                  padding: "4px 14px",
-                  borderRadius: 999,
-                  background: "#e5e7eb",
-                  fontSize: "0.8rem",
-                }}
-              >
+              <span style={{ padding: "4px 14px", borderRadius: 999, background: "#e5e7eb", fontSize: "0.8rem" }}>
                 Score {result.score.toFixed(1)}
               </span>
             </div>
@@ -502,7 +362,7 @@ export default function WordOfTheDayPage() {
 
             <div
               style={{
-                marginBottom: 10,
+                marginBottom: 24,
                 padding: "10px 12px",
                 borderRadius: 10,
                 background: "#ecfdf3",
@@ -511,28 +371,10 @@ export default function WordOfTheDayPage() {
               }}
             >
               <strong>Suggestion: </strong>
-              {result.corrected_sentence || result.suggestion}
+              {result.suggestion}
             </div>
 
-            <p
-              style={{
-                fontSize: "0.8rem",
-                color: "#6b7280",
-                marginTop: 0,
-                marginBottom: 24,
-              }}
-            >
-              {result.suggestion}
-            </p>
-
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginTop: 8,
-              }}
-            >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8 }}>
               <button
                 type="button"
                 onClick={() => setShowResultModal(false)}
@@ -562,6 +404,23 @@ export default function WordOfTheDayPage() {
                 }}
               >
                 View my progress
+              </button>
+            </div>
+
+            <div style={{ marginTop: 14, display: "flex", justifyContent: "center" }}>
+              <button
+                type="button"
+                onClick={handleRetry}
+                style={{
+                  padding: "10px 24px",
+                  borderRadius: 999,
+                  border: "1px solid #e5e7eb",
+                  background: "white",
+                  fontSize: "0.9rem",
+                  cursor: "pointer",
+                }}
+              >
+                Retry
               </button>
             </div>
           </div>

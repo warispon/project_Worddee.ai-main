@@ -46,7 +46,7 @@ type HistoryItem = {
   score: number;
   feedback?: string;
   corrected_sentence?: string;
-  practiced_at?: string; // ✅ ถ้ามี จะใช้เรียงให้ชัวร์
+  practiced_at?: string; 
 };
 
 export default function DashboardPage() {
@@ -88,14 +88,14 @@ export default function DashboardPage() {
     fetchDashboard();
   }, []);
 
-  // ✅ เรียง history ให้ Attempt ล่าสุดเป็นจุดท้ายกราฟ
+ 
   const orderedHistory = useMemo(() => {
     if (!history || history.length === 0) return [];
 
     const hasTime = history.every((x) => !!x.practiced_at);
 
     if (hasTime) {
-      // เรียงจากเก่า -> ใหม่ ตามเวลา (ชัวร์ที่สุด)
+      
       return [...history].sort(
         (a, b) =>
           new Date(a.practiced_at as string).getTime() -
@@ -103,9 +103,6 @@ export default function DashboardPage() {
       );
     }
 
-    // ถ้าไม่มีเวลา ให้ถือว่า backend ส่ง “ใหม่ก่อน” แล้วกลับลำดับเป็นเก่า->ใหม่
-    // (ถ้า backend ส่งเก่า->ใหม่อยู่แล้ว reverse จะทำให้เพี้ยน
-    // แต่กรณีส่วนใหญ่ /api/history มักส่งใหม่ก่อน)
     return [...history].reverse();
   }, [history]);
 
@@ -124,7 +121,7 @@ export default function DashboardPage() {
     ],
   };
 
-  // ✅ Hours / Minutes learned = ผลรวม Duration (วินาที) ของ attempts ทั้งหมด
+  
   const totalSecondsLearned = useMemo(() => {
     if (!history || history.length === 0) return 0;
     return history.reduce((sum, item: any) => {
@@ -141,10 +138,10 @@ export default function DashboardPage() {
       style={{
         minHeight: "calc(100vh - 56px)",
         padding: "40px 0",
-        background: "#7f9090", // ✅ เขียวหม่นทั้งหน้า
+        background: "#7f9090", 
       }}
     >
-      {/* ✅ ไม่ต้องมีกล่อง/กรอบสีเขียวหม่นแล้ว แค่จัด center */}
+      
       <div style={{ maxWidth: 1160, margin: "0 auto", padding: "0 16px" }}>
         <div
           style={{
@@ -156,7 +153,7 @@ export default function DashboardPage() {
             boxShadow: "0 18px 40px rgba(15,23,42,0.20)",
           }}
         >
-          {/* Header */}
+          
           <header style={{ marginBottom: 22 }}>
             <h1
               style={{
@@ -179,7 +176,7 @@ export default function DashboardPage() {
             </p>
           </header>
 
-          {/* Missions bar */}
+          
           <section
             style={{
               marginBottom: 24,
@@ -196,7 +193,7 @@ export default function DashboardPage() {
             Well done! You&apos;ve completed all your missions.
           </section>
 
-          {/* Overview */}
+          
           <section>
             <h2
               style={{
@@ -212,7 +209,7 @@ export default function DashboardPage() {
               <p style={{ fontSize: "0.85rem", color: "#b91c1c" }}>{error}</p>
             )}
 
-            {/* Summary cards */}
+            
             <div
               style={{
                 display: "grid",
@@ -221,7 +218,7 @@ export default function DashboardPage() {
                 marginBottom: 22,
               }}
             >
-              {/* Learning consistency */}
+              
               <div
                 style={{
                   borderRadius: 14,
@@ -255,7 +252,7 @@ export default function DashboardPage() {
                 </p>
               </div>
 
-              {/* Average score */}
+              
               <div
                 style={{
                   borderRadius: 14,
@@ -279,7 +276,7 @@ export default function DashboardPage() {
                 </p>
               </div>
 
-              {/* Hours / Minutes learned (แทน Words practiced) */}
+              
               <div
                 style={{
                   borderRadius: 14,
@@ -316,7 +313,7 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Chart card */}
+            
             <div
               style={{
                 borderRadius: 16,
@@ -400,7 +397,7 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Take the test button */}
+            
             <div style={{ textAlign: "center" }}>
               <button
                 type="button"
